@@ -1,17 +1,13 @@
 #!/bin/bash
+set -euo pipefail
 
-rm -f $PWD/llvm-project/llvm/CMakePresets.json
-ln -s $PWD/scripts/CMakePresets.json $PWD/llvm-project/llvm/CMakePresets.json
+cd "$(dirname "$0")/.."
+scripts/llvm_download.sh
 
-pushd llvm-project
+preset_file=llvm-project/llvm/CMakeUserPresets.json
+if [[ ! scripts/CMakePresets.json -ef "$preset_file" ]]; then
+  ln -s ../../scripts/CMakePresets.json "$preset_file"
+fi
 
-cmake --preset osx -S$PWD/llvm -B$PWD/build
-
-# TODO: reduce cmake targets, only llvm & mlir libs
-
-cmake --build $PWD/build --target all
-# cmake --build $PWD/build --target install
-
-popd
-
-###############################################################################
+cmake --preset "${1:-osx}" -S llvm-project/llvm
+cmake --build llvm-project/build --parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-32}" --target all

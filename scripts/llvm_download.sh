@@ -1,43 +1,22 @@
 #!/bin/bash
+set -euo pipefail
 
-mkdir -p llvm-project && pushd llvm-project
+cd "$(dirname "$0")/.."
+# AscendNPU-IR@f91ec30e, third-party/llvm-project.
+llvm_sha=89964933a2bf8bdb93831de22cbf5b6fc99c54f7
+llvm_url=https://gitcode.com/Ascend/llvm-project.git
 
-git init
-
-git remote add origin git@github.com:llvm/llvm-project.git
-# git remote add origin https://gitcode.com/GitHub_Trending/ll/llvm-project.git
-# git remote add origin /repo/llvm-project
-
-######
-
-git sparse-checkout set --no-cone \
-  /cmake /llvm /mlir /lld /libunwind \
-  '!/llvm/test' '!/llvm/unittests' '!/llvm/docs' \
-  '!/mlir/test' '!/mlir/unittests' '!/mlir/docs' \
-  '!/lld/test' \
-  '/third-party/siphash' \
-  /.vscode '/*.*' '!/.ci' '!/.github'
-
-git sparse-checkout add \
-  '!/llvm/utils/gn' \
-  '!/llvm/lib/Target' '/llvm/lib/Target/*.*' \
-  '/llvm/lib/Target/RISCV' '/llvm/lib/Target/ARM' '/llvm/lib/Target/AArch64' \
-  '/llvm/lib/Target/AMDGPU' '/llvm/lib/Target/NVPTX' '/llvm/lib/Target/X86' \
-  '/llvm/lib/Target/SPIRV' '/llvm/lib/Target/PowerPC'
-
-git sparse-checkout add \
-  '/llvm/docs' '/mlir/test' '/mlir/docs'
-
-git sparse-checkout list
-
-######
-
-LLVM_SHA="b5cc222d7429fe6f18c787f633d5262fac2e676f"
-
-git fetch --depth 1 origin $LLVM_SHA
-# git checkout -b sync $LLVM_SHA
-git checkout $LLVM_SHA
-
-popd
-
-###############################################################################
+git init -q llvm-project
+cd llvm-project
+# The previous build script placed its preset at LLVM's project preset path.
+if [[ -L llvm/CMakePresets.json && llvm/CMakePresets.json -ef ../scripts/CMakePresets.json ]]; then
+  rm llvm/CMakePresets.json
+fi
+if ! git remote get-url origin >/dev/null 2>&1; then
+  git remote add origin "$llvm_url"
+fi
+git sparse-checkout set --cone cmake llvm mlir third-party
+if ! git cat-file -e "$llvm_sha^{commit}" 2>/dev/null; then
+  git fetch --depth 1 "$llvm_url" "$llvm_sha"
+fi
+git checkout --detach "$llvm_sha"
