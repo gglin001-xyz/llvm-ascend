@@ -10,4 +10,4 @@ if [[ ! scripts/CMakePresets.json -ef "$preset_file" ]]; then
 fi
 
 cmake --preset "${1:-osx}" -S llvm-project/llvm
-cmake --build llvm-project/build --parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-32}" --target all
+cmake --build llvm-project/build --parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-64}" --target all
